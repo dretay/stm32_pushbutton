@@ -1,0 +1,3 @@
+-I~/src/Unity/src
+-Ilib/util
+-Ilib/st_hal_emulator
