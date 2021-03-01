@@ -1,8 +1,18 @@
 #include "PushButton.h"
 
-/* array and enum below must be in sync! */
+#if PUSHBUTTON_PULLUP == 1
+const GPIO_PinState RELEASE_STATE = GPIO_PIN_SET;
+#else
+const GPIO_PinState RELEASE_STATE = GPIO_PIN_RESET;
+#endif
 
-enum ret_codes (*state[])(struct button_config*) = { button_down_handler, short_press_handler, long_press_handler, very_long_press_handler, double_press_handler, button_up_handler, stop_handler };
+/* array and enum below must be in sync! */
+enum ret_codes (*state[])(struct button_config*) = {
+    button_down_handler, short_press_handler,
+    long_press_handler, very_long_press_handler,
+    double_press_handler, button_up_handler,
+    stop_handler
+};
 struct transition state_transitions[] = {
 
     { button_down, ok, short_press },
@@ -63,17 +73,15 @@ static enum ret_codes button_down_handler(struct button_config* button)
 }
 static enum ret_codes short_press_handler(struct button_config* button)
 {
-    if (button->state == GPIO_PIN_RESET) {
+    if (button->state == RELEASE_STATE) {
         return ok;
     } else {
         // if held for more than 1s transition to long
         if (HAL_GetTick() - button->elapsed_time > LONG_PRESS_DELAY) {
             return proceed;
         } else if (HAL_GetTick() - button->last_fsm_completion < LONG_PRESS_DELAY) {
-
             return special;
         } else if (button->last_state != short_press) {
-
             if (button->button_down_short != NULL) {
                 button->button_down_short();
             }
@@ -84,7 +92,7 @@ static enum ret_codes short_press_handler(struct button_config* button)
 }
 static enum ret_codes long_press_handler(struct button_config* button)
 {
-    if (button->state == GPIO_PIN_RESET) {
+    if (button->state == RELEASE_STATE) {
         return ok;
     } else {
         // if held for an additional 1s transition to very_long
@@ -101,7 +109,7 @@ static enum ret_codes long_press_handler(struct button_config* button)
 }
 static enum ret_codes very_long_press_handler(struct button_config* button)
 {
-    if (button->state == GPIO_PIN_RESET) {
+    if (button->state == RELEASE_STATE) {
         return ok;
     } else {
         // just sit here till they get off the button
@@ -141,7 +149,6 @@ static void loop()
         struct button_config* button = &button_configs[i];
         // is debounce over?
         if (button->debounce_time != 0 && HAL_GetTick() > button->debounce_time) {
-
             button->debounce_time = 0;
             GPIO_PinState state = HAL_GPIO_ReadPin(button->gpio_port, button->gpio_pin);
 
@@ -149,12 +156,12 @@ static void loop()
             if (state != button->state) {
                 // update state
                 button->state = state;
-                //app_log_trace("button %d state changed: %d", button->gpio_pin, state);
                 // if state is stop and button is down, start fsm
-                if (state == GPIO_PIN_SET && button->cur_state == stop) {
+                if (state != RELEASE_STATE && button->cur_state == stop) {
                     button->state = state;
                     button->cur_state = button_down;
                 }
+            } else {
             }
         }
         // if debounce has elapsed and we're stopped continue

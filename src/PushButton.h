@@ -1,20 +1,28 @@
-#include "types_shortcuts.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+
+#include "types_shortcuts.h"
 #ifdef TEST
+#include <stdio.h>
+
 #include "gpio.h"
 #include "hal.h"
-#include <stdio.h>
+#else
+#include "UartLogger.h"
+#include "stm32f1xx_hal.h"
 #endif
 
-enum state_codes { button_down,
+#define PUSHBUTTON_PULLUP 0
+enum state_codes {
+    button_down,
     short_press,
     long_press,
     very_long_press,
     double_press,
     button_up,
-    stop };
+    stop
+};
 struct button_config {
     enum state_codes cur_state;
     u32 elapsed_time;
@@ -44,7 +52,7 @@ static enum ret_codes button_up_handler(struct button_config* button);
 static enum ret_codes stop_handler(struct button_config* button);
 int find_button(u16 gpio_pin);
 #define MAX_BUTTONS 3
-//Defines the number of ms before a value is considered legitimate
+// Defines the number of ms before a value is considered legitimate
 #define DBNC_COUNTER_MAX 100
 #define LONG_PRESS_DELAY 1000
 #define VERY_LONG_PRESS_DELAY LONG_PRESS_DELAY + 1000
