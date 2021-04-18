@@ -10,6 +10,11 @@
 #include "hal.h"
 #else
 #include "UartLogger.h"
+#endif
+
+#ifdef STM32L051xx
+#include "stm32l0xx_hal.h"
+#else
 #include "stm32f1xx_hal.h"
 #endif
 
